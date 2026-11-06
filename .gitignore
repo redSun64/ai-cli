@@ -1,0 +1,5 @@
+/dist/
+/employee
+/employee.exe
+*.log
+.env
