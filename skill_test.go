@@ -18,8 +18,17 @@ func testSkill() aicli.SkillBundle {
 	}}
 }
 
+func realTempDir(t *testing.T) string {
+	t.Helper()
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
 func TestSkillPreviewInstallAndForce(t *testing.T) {
-	parent := t.TempDir()
+	parent := realTempDir(t)
 	bundle := testSkill()
 	result, err := bundle.Install(aicli.SkillInstallOptions{Directory: parent, Launcher: "test-cli", DryRun: true})
 	if err != nil || !result.DryRun || len(result.Files) != 2 {
@@ -77,7 +86,7 @@ func TestSkillValidationAndCLI(t *testing.T) {
 	if err != nil || len(schema.Options) != 3 {
 		t.Fatal(schema, err)
 	}
-	parent := t.TempDir()
+	parent := realTempDir(t)
 	var out, errOut strings.Builder
 	if code := r.RunCLI(context.Background(), []string{"skills", "install", "--dir", parent, "--dry-run"}, &out, &errOut, aicli.CLIOptions{}); code != 0 {
 		t.Fatal(code, errOut.String())
@@ -88,7 +97,7 @@ func TestSkillValidationAndCLI(t *testing.T) {
 }
 
 func TestSkillRejectsSymlinkAncestor(t *testing.T) {
-	root := t.TempDir()
+	root := realTempDir(t)
 	real := filepath.Join(root, "real")
 	link := filepath.Join(root, "link")
 	if err := os.Mkdir(real, 0700); err != nil {

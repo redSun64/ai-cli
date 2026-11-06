@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"sync"
 	"testing"
 
 	aicli "github.com/redSun64/ai-cli"
@@ -18,8 +19,12 @@ func TestOnboardingAndRecovery(t *testing.T) {
 	for _, failRole := range []bool{false, true} {
 		t.Run(fmt.Sprint(failRole), func(t *testing.T) {
 			steps := []string{}
+			var mu sync.Mutex
+			getSteps := func() []string { mu.Lock(); defer mu.Unlock(); return append([]string{}, steps...) }
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mu.Lock()
 				steps = append(steps, r.Method+" "+r.URL.Path)
+				mu.Unlock()
 				if r.Header.Get("Authorization") != "Bearer fixture-credential" {
 					t.Error("missing authentication")
 				}
@@ -59,8 +64,8 @@ func TestOnboardingAndRecovery(t *testing.T) {
 				t.Fatal(err)
 			}
 			_, err = app.Execute(context.Background(), []string{"employee", "+onboard"}, aicli.Arguments{"--name": "Example"}, aicli.ExecuteOptions{DryRun: true})
-			if err != nil || len(steps) != 0 {
-				t.Fatal("preview invoked business", err, steps)
+			if err != nil || len(getSteps()) != 0 {
+				t.Fatal("preview invoked business", err, getSteps())
 			}
 			_, err = app.Execute(context.Background(), []string{"employee", "+onboard"}, aicli.Arguments{"--name": "Example"}, aicli.ExecuteOptions{Confirmed: true})
 			if failRole {
@@ -72,8 +77,8 @@ func TestOnboardingAndRecovery(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := []string{"GET /employees/search", "POST /accounts", "POST /roles/bind"}
-			if !reflect.DeepEqual(steps, want) {
-				t.Fatal(steps)
+			if !reflect.DeepEqual(getSteps(), want) {
+				t.Fatal(getSteps())
 			}
 			_, err = app.Execute(context.Background(), []string{"employee", "+status"}, aicli.Arguments{"--account-id": "acc-1"}, aicli.ExecuteOptions{})
 			if err != nil {
