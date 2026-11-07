@@ -77,6 +77,12 @@ func New(config Config) (*Runtime, error) {
 			}
 			path := append(append([]string{}, prefix...), node.Name)
 			key := strings.Join(path, " ")
+			if node.definitionError != nil {
+				return failure("CONFIG_INVALID", "Invalid definition for "+key+": "+node.definitionError.Error())
+			}
+			if node.input != nil && !node.input.matches(node.Options) {
+				return failure("CONFIG_INVALID", "Typed options are derived from input fields; do not replace Options: "+key)
+			}
 			if _, ok := r.groups[key]; ok {
 				return failure("CONFIG_INVALID", "Duplicate command: "+key)
 			}
@@ -193,6 +199,11 @@ func (r *Runtime) Execute(ctx context.Context, path []string, input Arguments, o
 			secrets = append(secrets, fmt.Sprint(value))
 		}
 	}
+	if command.input != nil {
+		if _, err := command.input.bind(args); err != nil {
+			return nil, err
+		}
+	}
 	if options.DryRun {
 		for _, option := range command.Options {
 			if isSensitive(option) && args[option.Name] != nil {
@@ -236,6 +247,7 @@ type SchemaOption struct {
 	Description  string  `json:"description"`
 	DefaultValue *string `json:"defaultValue,omitempty"`
 	Sensitive    bool    `json:"sensitive,omitempty"`
+	Integer      bool    `json:"integer,omitempty"`
 }
 
 // CommandSummary describes one immediate child without expanding descendants.
@@ -271,6 +283,9 @@ func (r *Runtime) Schema(path ...string) (CommandSchema, error) {
 		for _, o := range node.Options {
 			types := map[OptionType]string{String: "String", Number: "Double", Boolean: "boolean"}
 			item := SchemaOption{Name: o.Name, Required: o.Required, Type: types[o.Type], Description: o.Description, Sensitive: isSensitive(o)}
+			if node.input != nil {
+				item.Integer = node.input.integer(o.Name)
+			}
 			if o.Default != nil && !item.Sensitive {
 				v := fmt.Sprint(o.Default)
 				item.DefaultValue = &v

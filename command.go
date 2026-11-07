@@ -76,13 +76,15 @@ type Handler func(Invocation) (any, error)
 // Command is either a group with Children, or a leaf with Risk and Run.
 // Groups cannot define options, risk, Agent metadata or a handler.
 type Command struct {
-	Name        string
-	Description string
-	Children    []Command
-	Options     []Option
-	Risk        Risk
-	Agent       *AgentMetadata
-	Run         Handler
+	Name            string
+	Description     string
+	Children        []Command
+	Options         []Option
+	Risk            Risk
+	Agent           *AgentMetadata
+	Run             Handler
+	definitionError error
+	input           *shape
 }
 
 var optionName = regexp.MustCompile(`^--[a-zA-Z0-9][a-zA-Z0-9_-]*$`)

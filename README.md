@@ -6,6 +6,8 @@ Go 1.23+。Module：`github.com/redSun64/ai-cli`，包名：`aicli`。CLI 使用
 
 ## 业务方快速接入
 
+以下安装命令面向已发布的 v0.1.0，保留手工 `Command` 接口。当前源码新增的 `Group` / `Typed` 尚未发布；新项目的结构化接入方式见 [类型化命令](docs/typed-commands.md)，本地联调使用 Go workspace。
+
 在自己的业务工程执行：
 
 ```sh

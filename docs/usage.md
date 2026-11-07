@@ -2,6 +2,8 @@
 
 ## 命令定义
 
+当前源码推荐通过 [Group / Typed](typed-commands.md) 声明业务模块与类型化输入；下面的低层 `Command` 接口仍受支持。
+
 父 `Command` 提供 `Name`、`Description`、非 nil 的 `Children`，叶子提供 `Options`、`Risk` 和 `Run`。叶子不能同时承担命令组。根级保留 `schema`、`auth`、`skills`、`help`。
 
 参数名使用 `--account-id` 这样的 CLI 拼写。支持 `String`、`Boolean`、`Number`；默认值必须类型一致，数字统一归一化为 `float64`，拒绝 NaN/Inf。CLI 的解析和帮助由 Cobra/pflag 提供；`--name=value`、布尔值 `--enabled=false`、`-y` 等沿用 Cobra 语法。进程内输入同样使用 CLI 参数名。浮点参数不适合需要精确表达的大整数，业务 ID 应使用字符串。
